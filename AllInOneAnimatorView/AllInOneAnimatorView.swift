@@ -29,7 +29,7 @@ public enum FileType: String {
 }
 
 public enum ContentViewType {
-    case withInfo(fileOrUrlName: String?, fileType: FileType, viewContentMode: UIView.ContentMode? = nil, vedioGravity: AVLayerVideoGravity? = nil)
+    case withInfo(fileOrUrlName: String?, fileType: FileType, viewContentMode: UIView.ContentMode? = nil, vedioGravity: AVLayerVideoGravity? = nil,isMuted: Bool? = false)
 }
 
 public class ContentView: UIView {
@@ -39,6 +39,7 @@ public class ContentView: UIView {
     private var imageView: UIImageView?
     private var gifView: UIImageView?
     private var volumeButton: UIButton!
+    private var isMuted: Bool = false
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -54,17 +55,19 @@ public class ContentView: UIView {
     
     private func setupView(contentType: ContentViewType) {
         switch contentType {
-        case .withInfo(let fileOrUrlName, let fileType, let contentMode, let vedioGravity):
+        case .withInfo(let fileOrUrlName, let fileType, let contentMode, let vedioGravity, let isMuted):
             guard let file = fileOrUrlName else {
                 print("File name and type must be provided")
                 return
             }
             
+            let muteStatus = isMuted ?? false
+            
             if let url = URL(string: file), url.isFileURL {
                 // It's a valid file URL
                 switch fileType {
                 case .mp4, .avi, .mov, .mkv, .wmv, .flv:
-                    setupLocalVideoPlayer(url: url, vedioGravity: vedioGravity)
+                    setupLocalVideoPlayer(url: url, vedioGravity: vedioGravity,isMuted: muteStatus)
                 case .gif:
                     setupLocalGifView(url: url,contentMode: contentMode)
                 case .json:
@@ -140,13 +143,14 @@ public class ContentView: UIView {
     
     private func setupRemoteVideoPlayer(url: URL, vedioGravity:AVLayerVideoGravity?) {
         setupLocalVideoPlayer(url: url, vedioGravity: vedioGravity)
+
     }
     
-    private func setupLocalVideoPlayer(url: URL, vedioGravity: AVLayerVideoGravity?) {
+    private func setupLocalVideoPlayer(url: URL, vedioGravity: AVLayerVideoGravity?, isMuted: Bool? = nil) {
         player = AVPlayer(url: url)
         playerLayer = AVPlayerLayer(player: player)
         playerLayer?.frame = bounds
-        
+
         // Set video gravity
         if let vedioGravity = vedioGravity {
             playerLayer?.videoGravity = vedioGravity
@@ -154,40 +158,50 @@ public class ContentView: UIView {
             // Set default video gravity if no custom one is provided
             playerLayer?.videoGravity = .resizeAspectFill
         }
-        
+
         if let playerLayer = playerLayer {
             layer.addSublayer(playerLayer)
         }
-        
+
+        // Set mute status
+        if let isMuted = isMuted {
+            player?.isMuted = isMuted
+        }
+
         player?.play()
-        
+
         setupVolumeButton()
-        
+
         // Add observer for player item status
         player?.currentItem?.addObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), options: [.old, .new], context: nil)
     }
 
+
+    public func stopPlayer() {
+        player?.pause()
+        player = nil
+    }
     
     override public func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-            guard keyPath == #keyPath(AVPlayerItem.status) else {
-                super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
-                return
-            }
-            
-            // Handle changes in AVPlayerItem's status here
-            if let playerItem = object as? AVPlayerItem {
-                switch playerItem.status {
-                case .unknown:
-                    print("AVPlayerItem status is unknown")
-                case .readyToPlay:
-                    print("AVPlayerItem is ready to play")
-                case .failed:
-                    print("AVPlayerItem failed to load")
-                @unknown default:
-                    break
-                }
+        guard keyPath == #keyPath(AVPlayerItem.status) else {
+            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
+            return
+        }
+        
+        // Handle changes in AVPlayerItem's status here
+        if let playerItem = object as? AVPlayerItem {
+            switch playerItem.status {
+            case .unknown:
+                print("AVPlayerItem status is unknown")
+            case .readyToPlay:
+                print("AVPlayerItem is ready to play")
+            case .failed:
+                print("AVPlayerItem failed to load")
+            @unknown default:
+                break
             }
         }
+    }
     
     private func setupVolumeButton() {
         let buttonSize = CGSize(width: 50, height: 50)
@@ -221,14 +235,14 @@ public class ContentView: UIView {
             // Setting default content mode if no custom one is provided
             animationView?.contentMode = .scaleAspectFit
         }
-            
+        
         if let animationView = animationView {
             addSubview(animationView)
             animationView.loopMode = .loop
             animationView.play()
         }
     }
-
+    
     
     private func setupRemoteAnimationView(animationURL: URL) {
         // Fetch Lottie animation data from the remote URL
@@ -255,7 +269,7 @@ public class ContentView: UIView {
             animationView = LottieAnimationView(animation: animation)
             animationView?.frame = bounds
             animationView?.contentMode = .scaleAspectFit
-                
+            
             if let animationView = animationView {
                 addSubview(animationView)
                 animationView.loopMode = .loop
@@ -288,7 +302,7 @@ public class ContentView: UIView {
             ])
         }
     }
-
+    
     
     private func setupLocalGifView(url: URL, contentMode: UIView.ContentMode?) {
         guard let localURL = Bundle.main.url(forResource: url.deletingPathExtension().lastPathComponent, withExtension: "gif") else {
@@ -307,7 +321,7 @@ public class ContentView: UIView {
             }
         }
     }
-
+    
     
     private func setupRemoteGifView(url: URL) {
         gifView?.removeFromSuperview()
@@ -349,7 +363,7 @@ extension UIImageView {
                 images.append(UIImage(cgImage: image))
             }
         }
-            
+        
         let gifImageView = UIImageView(frame: frame)
         gifImageView.animationImages = images
         gifImageView.contentMode = .scaleAspectFit
