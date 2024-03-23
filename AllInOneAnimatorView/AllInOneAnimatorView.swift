@@ -219,7 +219,7 @@ public class ContentView: UIView {
             animationView?.contentMode = contentMode
         } else {
             // Setting default content mode if no custom one is provided
-            animationView?.contentMode = .scaleAspectFill
+            animationView?.contentMode = .scaleAspectFit
         }
             
         if let animationView = animationView {
@@ -254,7 +254,8 @@ public class ContentView: UIView {
             let animation = try JSONDecoder().decode(LottieAnimation.self, from: data)
             animationView = LottieAnimationView(animation: animation)
             animationView?.frame = bounds
-            animationView?.contentMode = .scaleAspectFill
+            animationView?.contentMode = .scaleAspectFit
+                
             if let animationView = animationView {
                 addSubview(animationView)
                 animationView.loopMode = .loop
@@ -273,7 +274,7 @@ public class ContentView: UIView {
             imageView?.contentMode = contentMode
         } else {
             // Setting default content mode if no custom one is provided
-            imageView?.contentMode = .scaleAspectFill
+            imageView?.contentMode = .scaleAspectFit
         }
         
         if let imageView = imageView {
@@ -302,7 +303,7 @@ public class ContentView: UIView {
                 gifView.contentMode = contentMode
             } else {
                 // Setting default content mode if no custom one is provided
-                gifView.contentMode = .scaleAspectFill // or any other default value you prefer
+                gifView.contentMode = .scaleAspectFit// or any other default value you prefer
             }
         }
     }
@@ -313,9 +314,9 @@ public class ContentView: UIView {
         UIImageView.fromRemoteGif(url: url, frame: bounds) { [weak self] imageView in
             guard let self = self, let gifView = imageView else { return }
             self.gifView = gifView
-            self.gifView?.contentMode = .scaleAspectFill
+            self.gifView?.contentMode = .scaleAspectFit
             self.addSubview(gifView)
-            gifView.contentMode = .scaleAspectFill
+            gifView.contentMode = .scaleAspectFit
         }
     }
 }
@@ -351,9 +352,10 @@ extension UIImageView {
             
         let gifImageView = UIImageView(frame: frame)
         gifImageView.animationImages = images
-        gifImageView.contentMode = .scaleAspectFill
+        gifImageView.contentMode = .scaleAspectFit
         gifImageView.animationDuration = Double(imageCount) * 0.1
         gifImageView.startAnimating()
         return gifImageView
     }
 }
+
